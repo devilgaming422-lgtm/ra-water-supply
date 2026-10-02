@@ -1,0 +1,21 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "RA WATER SUPPLY",
+  "orientation": "portrait",
+  "scope": "/ra-water-supply/",
+  "short_name": "RA WATER",
+  "start_url": "/ra-water-supply/",
+  "theme_color": "#ffffff",
+  "id": "https://devilgaming422-lgtm.github.io/ra-water-supply/",
+  "description": "RA WATER SUPPLY - Water Delivery App",
+  "lang": "en",
+  "display_override": [
+    "window-controls-overlay"
+  ],
+  "categories": [
+    "business",
+    "shopping"
+  ]
+}
