@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RA WATER SUPPLY</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f3f9fc;color:#14212b}
+header{background:linear-gradient(135deg,#087fce,#00a8e8);color:white;text-align:center;padding:25px 16px}
+.logo{font-size:29px;font-weight:800}.tag{margin-top:5px}.wrap{max-width:650px;margin:auto;padding:14px}
+.card{background:#fff;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 5px 20px #0000000d}
+h2{margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.floor{border:2px solid #dcecf5;border-radius:15px;padding:14px}.floor b{font-size:17px}.price{color:#087fce;font-size:22px;font-weight:800;margin-top:5px}
+.qty{display:flex;justify-content:space-between;align-items:center;margin-top:12px}.qty button{border:0;background:#087fce;color:#fff;width:38px;height:38px;border-radius:50%;font-size:21px}.qty span{font-weight:700;font-size:20px}
+input,textarea{width:100%;padding:13px;border:1px solid #ccd8df;border-radius:10px;font-size:16px;margin:5px 0 11px}textarea{min-height:90px}
+.primary{width:100%;border:0;background:#087fce;color:white;padding:15px;border-radius:12px;font-weight:700;font-size:17px}.secondary{background:#eef7fc;color:#087fce}
+.row{display:flex;justify-content:space-between;padding:7px 0}.total{border-top:1px solid #ddd;margin-top:7px;padding-top:12px;font-size:21px;font-weight:800}
+.hidden{display:none}.small{font-size:13px;color:#687983}.order{border:1px solid #dce7ed;border-radius:12px;padding:12px;margin:9px 0}.badge{display:inline-block;background:#e9f7ef;color:#16723b;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:700}
+nav{display:flex;gap:8px;margin:10px 0}nav button{flex:1;border:0;padding:10px;border-radius:9px}.error{color:#b71c1c;background:#ffeded;padding:10px;border-radius:9px}.success{text-align:center}
+@media(max-width:470px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><div class="logo">💧 RA WATER SUPPLY</div><div class="tag">20 Litre Drinking Water Delivery</div></header>
+<div class="wrap">
+
+<section id="shop">
+<div class="card"><h2>Select Water & Quantity</h2><div class="grid" id="products"></div></div>
+<div class="card"><button class="primary" onclick="goCheckout()">Continue →</button></div>
+</section>
+
+<section id="checkout" class="hidden">
+<div class="card"><button class="primary secondary" onclick="show('shop')">← Back</button></div>
+<div class="card"><h2>Order Summary</h2><div id="summary"></div>
+<input id="promo" placeholder="Promo code (optional)" oninput="renderSummary()"><div id="promoMsg" class="small"></div><div id="totals"></div></div>
+<div class="card"><h2>Delivery Details</h2>
+<input id="name" placeholder="Customer Name *"><input id="phone" inputmode="numeric" maxlength="10" placeholder="Mobile Number *">
+<textarea id="address" placeholder="Full Delivery Address *"></textarea><input id="landmark" placeholder="Landmark (optional)">
+<div class="badge">💵 Cash on Delivery</div><p class="small">Payment delivery ke time cash mein hoga.</p>
+<div id="err" class="error hidden"></div><button class="primary" onclick="placeOrder()">Place COD Order</button></div>
+</section>
+
+<section id="success" class="hidden"><div class="card success"><div style="font-size:55px">✅</div><h2>Order Placed!</h2><p>Your Order ID</p><h2 id="oid"></h2><p id="successMsg"></p><button class="primary" onclick="newOrder()">New Order</button></div></section>
+
+<section id="history" class="hidden"><div class="card"><h2>My Order History</h2>
+<p class="small">Apna 10-digit mobile number enter karke orders dekhein.</p><input id="historyPhone" inputmode="numeric" maxlength="10" placeholder="Mobile Number">
+<button class="primary" onclick="loadHistory()">View Orders</button><div id="historyResult"></div></div></section>
+
+<div class="card"><button class="primary secondary" onclick="show('history')">📦 My Order History</button></div>
+</div>
+<footer style="text-align:center;color:#71808a;padding:20px;font-size:13px">RA WATER SUPPLY</footer>
+
+<script>
+const SUPABASE_URL="YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const products=[
+ {id:1,floor:"1st Floor",price:30},{id:2,floor:"2nd Floor",price:40},
+ {id:3,floor:"3rd Floor",price:45},{id:4,floor:"4th Floor",price:45}
+];
+let qty={1:0,2:0,3:0,4:0};
+
+function init(){document.getElementById("products").innerHTML=products.map(p=>`
+<div class="floor"><b>${p.floor}</b><div class="price">₹${p.price}</div><div class="small">per 20L</div>
+<div class="qty"><button onclick="change(${p.id},-1)">−</button><span id="q${p.id}">0</span><button onclick="change(${p.id},1)">+</button></div></div>`).join("")}
+function change(id,d){qty[id]=Math.max(0,Math.min(99,qty[id]+d));document.getElementById("q"+id).textContent=qty[id]}
+function items(){return products.filter(p=>qty[p.id]>0).map(p=>({floor:p.floor,qty:qty[p.id],price:p.price,subtotal:qty[p.id]*p.price}))}
+async function calc(){let its=items(),subtotal=its.reduce((a,x)=>a+x.subtotal,0),code=(document.getElementById("promo")?.value||"").trim().toUpperCase(),discount=0,msg="";
+if(code){let {data,error}=await db.from("promos").select("*").eq("code",code).eq("active",true).maybeSingle();
+if(error){msg="Promo verification unavailable."; } else if(!data){msg="Invalid promo code."} else if(subtotal<data.min_order){msg=`Minimum order for this code is ₹${data.min_order}.`} else {discount=data.discount_type==="flat"?Number(data.discount_value):Math.round(subtotal*Number(data.discount_value)/100);msg=`Promo applied: ₹${discount} off`}}
+return {its,subtotal,discount,total:subtotal-discount,msg,code}}
+async function renderSummary(){let c=await calc();document.getElementById("summary").innerHTML=c.its.map(x=>`<div class="row"><span>${x.floor} × ${x.qty}</span><b>₹${x.subtotal}</b></div>`).join("");document.getElementById("promoMsg").textContent=c.msg;document.getElementById("totals").innerHTML=`<div class="row"><span>Subtotal</span><b>₹${c.subtotal}</b></div><div class="row"><span>Discount</span><b>− ₹${c.discount}</b></div><div class="row total"><span>Final Amount</span><b>₹${c.total}</b></div>`}
+function show(id){["shop","checkout","success","history"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));scrollTo(0,0);if(id==="checkout")renderSummary()}
+function goCheckout(){if(!items().length)return alert("Please select at least 1 water bottle.");show("checkout")}
+async function placeOrder(){let name=document.getElementById("name").value.trim(),phone=document.getElementById("phone").value.replace(/\D/g,""),address=document.getElementById("address").value.trim(),landmark=document.getElementById("landmark").value.trim(),err=document.getElementById("err");if(!name||phone.length!==10||!address){err.textContent="Name, valid 10-digit mobile and address are required.";err.classList.remove("hidden");return}err.classList.add("hidden");let c=await calc(),orderNo="RA-"+Date.now().toString().slice(-8);let {error}=await db.from("orders").insert({order_no:orderNo,customer_name:name,phone,address,landmark,items:c.its,subtotal:c.subtotal,discount:c.discount,promo_code:c.code||null,total:c.total,payment_method:"COD",status:"Pending"});if(error){err.textContent="Order save nahi hua: "+error.message;err.classList.remove("hidden");return}document.getElementById("oid").textContent=orderNo;document.getElementById("successMsg").textContent=`₹${c.total} COD order successfully placed.`;localStorage.setItem("ra_customer_phone",phone);show("success")}
+function newOrder(){qty={1:0,2:0,3:0,4:0};products.forEach(p=>document.getElementById("q"+p.id).textContent=0);document.getElementById("name").value="";document.getElementById("phone").value="";document.getElementById("address").value="";document.getElementById("landmark").value="";document.getElementById("promo").value="";show("shop")}
+async function loadHistory(){let phone=document.getElementById("historyPhone").value.replace(/\D/g,""),box=document.getElementById("historyResult");if(phone.length!==10){box.innerHTML='<div class="error">Enter a valid 10-digit mobile number.</div>';return}let {data,error}=await db.from("orders").select("*").eq("phone",phone).order("created_at",{ascending:false});if(error){box.innerHTML='<div class="error">'+error.message+'</div>';return}if(!data.length){box.innerHTML="<p>No orders found.</p>";return}box.innerHTML=data.map(o=>`<div class="order"><b>${o.order_no}</b><br><span class="small">${new Date(o.created_at).toLocaleString()}</span><br><span class="badge">${o.status}</span><div style="margin-top:7px">Total: <b>₹${o.total}</b></div></div>`).join("")}
+init();
+</script></body></html>
