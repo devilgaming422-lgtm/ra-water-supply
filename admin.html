@@ -18,7 +18,7 @@
 <div><input id="pcode" placeholder="Code e.g. RA20"></div><div><select id="ptype"><option value="flat">₹ Flat</option><option value="percent">% Percent</option></select></div><div><input id="pvalue" type="number" placeholder="Discount"></div><div><input id="pmin" type="number" placeholder="Minimum order"></div></div><button class="btn" onclick="addPromo()">Add Promo</button><div class="tablewrap"><table><thead><tr><th>Code</th><th>Discount</th><th>Min</th><th>Active</th><th>Action</th></tr></thead><tbody id="promos"></tbody></table></div></div>
 </section></div>
 <script>
-const SUPABASE_URL="NEXT_PUBLIC_SUPABASE_URL=https://ganlpybastoxjnelsxmq.supabase.co",SUPABASE_ANON_KEY="NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_T9Rvnl8JP_mCA77gX6zSLg_vlrgmuTZ";const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);let orders=[];
+const SUPABASE_URL="https://ganlpybastoxjnelsxmq.supabase.co",SUPABASE_ANON_KEY="sb_publishable_T9Rvnl8JP_mCA77gX6zSLg_vlrgmuTZ";const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);let orders=[];
 async function login(){let {error}=await db.auth.signInWithPassword({email:email.value,password:password.value});if(error){loginErr.textContent=error.message;return}start()}
 async function start(){let {data:{session}}=await db.auth.getSession();if(!session)return;login.classList.add("hidden");panel.classList.remove("hidden");loadAll()}
 async function logout(){await db.auth.signOut();location.reload()}
